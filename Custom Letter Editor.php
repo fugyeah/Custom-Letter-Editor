@@ -379,5 +379,5 @@ add_action('wp_ajax_nopriv_custom_letter_editor_handle_submission', 'custom_lett
     add_option('custom_letter_editor_recaptcha_secret_key', '');
     add_option('custom_letter_editor_custom_css', '');
     add_option('custom_letter_editor_custom_js', '');
-}}
+}
 
