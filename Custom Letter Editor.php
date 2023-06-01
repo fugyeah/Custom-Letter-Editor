@@ -158,9 +158,9 @@ class CustomLetterEditor extends WP_Widget {
         );
     }
 
-    public function widget($args, $instance) {
+public function widget($args, $instance) {
     echo $args['before_widget'];
-    echo $args['before_title'] . 'Widget Title' . $args['after_title'];
+    echo $args['before_title'] . $instance['title'] . $args['after_title'];
 
     // Widget content rendering
 
