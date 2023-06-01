@@ -161,7 +161,24 @@ class CustomLetterEditor extends WP_Widget {
 public function widget($args, $instance) {
     echo $args['before_widget'];
     echo $args['before_title'] . $instance['title'] . $args['after_title'];
+        echo '<form method="post" action="' . admin_url('admin-ajax.php') . '">'; // Update the form action
+        echo '<input type="hidden" name="action" value="custom_letter_editor_handle_submission">'; // Add a hidden field for the AJAX action
 
+        echo '<label for="name">Name:</label>';
+        echo '<input type="text" name="name" id="name" required>';
+
+        echo '<label for="email">Email:</label>';
+        echo '<input type="email" name="email" id="email" required>';
+
+        echo '<label for="address">Address:</label>';
+        echo '<textarea name="address" id="address" required></textarea>';
+
+
+    // Submit button
+    echo '<input type="submit" value="Submit">';
+
+    echo '</form>';
+        
     // Widget content rendering
 
     echo $args['after_widget'];
@@ -186,6 +203,7 @@ public function widget($args, $instance) {
     echo '<input type="submit" value="Submit">';
 
     echo '</form>';
+        
     // Widget code to display the widget form
     }
 
