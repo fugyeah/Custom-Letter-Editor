@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Custom Letter Editor
- * Version: 0.89
+ * Version: 0.90
  * Description: A plugin to generate custom letters using GPT API.
 */
 // Enqueue necessary scripts and stylesheets
@@ -192,7 +192,7 @@ public function widget($args, $instance) {
     public function update($new_instance, $old_instance) {
         // Widget code to handle updating widget data
     }
-
+}
 
 // Handle form submission and validate reCAPTCHA
 function custom_letter_editor_handle_submission() {
@@ -367,6 +367,10 @@ function custom_letter_editor_activate() {
 
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql);
+
+add_action('wp_ajax_custom_letter_editor_handle_submission', 'custom_letter_editor_handle_submission');
+add_action('wp_ajax_nopriv_custom_letter_editor_handle_submission', 'custom_letter_editor_handle_submission');
+
 
     // Set default options
     add_option('custom_letter_editor_api_key', '');
