@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name: Custom Letter Editor
- * Version: 0.90
+ * Version: 0.92
  * Description: A plugin to generate custom letters using GPT API.
-*/
+ */
 // Enqueue necessary scripts and stylesheets
 function custom_letter_editor_enqueue_scripts() {
     // Enqueue stylesheets
@@ -42,12 +42,44 @@ function custom_letter_editor_settings_page() {
 }
 add_action('admin_menu', 'custom_letter_editor_settings_page');
 
+function myplugin_settings_api_init() {
+    // Add a new section to the Writing settings page
+    add_settings_section(
+        'myplugin_api_settings_section',
+        'MyPlugin API Settings',
+        'myplugin_api_settings_section_callback',
+        'writing'
+    );
+
+    // Add the API Key field to the new section
+    add_settings_field(
+        'myplugin_api_key',
+        'API Key',
+        'myplugin_api_key_callback',
+        'writing',
+        'myplugin_api_settings_section'
+    );
+
+    // Register the API Key setting
+    register_setting('writing', 'myplugin_api_key');
+}
+add_action('admin_init', 'myplugin_settings_api_init');
+
+// Callback function for the settings section
+function myplugin_api_settings_section_callback() {
+    echo '<p>Enter your API Key for MyPlugin here.</p>';
+}
+
+// Callback function for the API Key field
+function myplugin_api_key_callback() {
+    echo '<input name="myplugin_api_key" id="myplugin_api_key" type="text" value="' . get_option('myplugin_api_key') . '" />';
+}
+
 // Register widget
 function custom_letter_editor_register_widget() {
     register_widget('CustomLetterEditor');
 }
 add_action('widgets_init', 'custom_letter_editor_register_widget');
-
 
 // Create settings page content
 function custom_letter_editor_settings_page_content() {
@@ -144,7 +176,6 @@ function custom_letter_editor_settings_page_content() {
         <input type="submit" name="custom_letter_editor_settings_submit" class="button button-primary" value="Save Settings">
     </form>
 </div>
-
 <?php
 }
 
@@ -157,66 +188,39 @@ class CustomLetterEditor extends WP_Widget {
             array('description' => 'This is a widget for the custom letter editor')
         );
     }
-
 public function widget($args, $instance) {
     echo $args['before_widget'];
     echo $args['before_title'] . $instance['title'] . $args['after_title'];
-        echo '<form method="post" action="' . admin_url('admin-ajax.php') . '">'; // Update the form action
-        echo '<input type="hidden" name="action" value="custom_letter_editor_handle_submission">'; // Add a hidden field for the AJAX action
 
-        echo '<label for="name">Name:</label>';
-        echo '<input type="text" name="name" id="name" required>';
+    // Generate a unique nonce for the widget form
+    $nonce = wp_create_nonce('custom_letter_editor_widget_nonce');
 
-        echo '<label for="email">Email:</label>';
-        echo '<input type="email" name="email" id="email" required>';
+    // Display the widget form
+    ?>
+    <form method="post" action="<?php echo admin_url('admin-ajax.php'); ?>">
+        <input type="hidden" name="action" value="custom_letter_editor_handle_submission">
+        <input type="hidden" name="custom_letter_editor_nonce" value="<?php echo $nonce; ?>">
 
-        echo '<label for="address">Address:</label>';
-        echo '<textarea name="address" id="address" required></textarea>';
+        <label for="name">Name:</label>
+        <input type="text" name="name" id="name" required>
 
+        <label for="email">Email:</label>
+        <input type="email" name="email" id="email" required>
 
-    // Submit button
-    echo '<input type="submit" value="Submit">';
+        <label for="address">Address:</label>
+        <textarea name="address" id="address" required></textarea>
 
-    echo '</form>';
-        
-    // Widget content rendering
+        <input type="submit" value="Submit">
+    </form>
+    <?php
 
     echo $args['after_widget'];
 }
 
 
-    public function form($instance) {
-        echo '<form method="post" action="' . admin_url('admin-ajax.php') . '">'; // Update the form action
-        echo '<input type="hidden" name="action" value="custom_letter_editor_handle_submission">'; // Add a hidden field for the AJAX action
-
-        echo '<label for="name">Name:</label>';
-        echo '<input type="text" name="name" id="name" required>';
-
-        echo '<label for="email">Email:</label>';
-        echo '<input type="email" name="email" id="email" required>';
-
-        echo '<label for="address">Address:</label>';
-        echo '<textarea name="address" id="address" required></textarea>';
-
-
-    // Submit button
-    echo '<input type="submit" value="Submit">';
-
-    echo '</form>';
-        
-    // Widget code to display the widget form
-    }
-
-    public function update($new_instance, $old_instance) {
-        // Widget code to handle updating widget data
-    }
-}
-
-// Handle form submission and validate reCAPTCHA
 function custom_letter_editor_handle_submission() {
-    // Verify the nonce for security
-    if (!isset($_POST['custom_letter_editor_nonce']) || !wp_verify_nonce($_POST['custom_letter_editor_nonce'], 'custom_letter_editor_submit')) {
-        wp_die('Invalid nonce.');
+    if (!isset($_POST['custom_letter_editor_nonce']) || !wp_verify_nonce($_POST['custom_letter_editor_nonce'], 'custom_letter_editor_handle_submission')) {
+        wp_send_json_error('Invalid nonce.');
     }
 
     // Verify the reCAPTCHA response
@@ -243,109 +247,108 @@ function custom_letter_editor_handle_submission() {
     $recaptcha_json = json_decode($recaptcha_result, true);
 
     if (!$recaptcha_json['success']) {
-        wp_die('reCAPTCHA verification failed.');
+        wp_send_json_error('reCAPTCHA verification failed.');
     }
 
     // Process form submission and generate letter
     $apiKey = get_option('custom_letter_editor_api_key');
     $selectedRecipient = get_option('custom_letter_editor_recipient_email');
-$selectedSubject = get_option('custom_letter_editor_subject');
-$selectedAdditionalDetails = get_option('custom_letter_editor_additional_details');
-$selectedSentiment = get_option('custom_letter_editor_sentiment');
+    $selectedSubject = get_option('custom_letter_editor_subject');
+    $selectedAdditionalDetails = get_option('custom_letter_editor_additional_details');
+    $selectedSentiment = get_option('custom_letter_editor_sentiment');
     $name = sanitize_text_field($_POST['name']);
     $email = sanitize_email($_POST['email']);
     $address = sanitize_text_field($_POST['address']);
 
-// Generate letter using GPT API
+    // Generate letter using GPT API
+    $gptApiResponse = generate_custom_letter($apiKey, $selectedRecipient, $selectedSubject, $selectedAdditionalDetails, $name, $email, $address, $selectedSentiment);
 
-$gptApiResponse = generate_custom_letter($apiKey, $recipient, $subject, $additionalDetails, $name, $email, $address, $selectedSentiment);
+    // Display or save the generated letter as needed
+    if ($gptApiResponse['success']) {
+        $generatedLetter = $gptApiResponse['data']['generated_letter'];
+        echo '<div class="notice notice-success"><p>' . $generatedLetter . '</p></div>';
 
+        // Get the email subject from the GPT API response
+        $emailSubject = $gptApiResponse['data']['email_subject'];
 
-// Display or save the generated letter as needed
-if ($gptApiResponse['success']) {
-    $generatedLetter = $gptApiResponse['data']['generated_letter'];
-    echo '<div class="notice notice-success"><p>' . $generatedLetter . '</p></div>';
+        // Send email to recipient(s)
+        $recipientEmails = explode(',', $selectedRecipient);
+        $emailSubject = get_option('custom_letter_editor_subject');
+        $emailBody = $generatedLetter;
+        $fromName = sanitize_text_field($_POST['name']);
+        $fromEmail = sanitize_email($_POST['email']);
 
-    // Get the email subject from the GPT API response
-    $emailSubject = $gptApiResponse['data']['email_subject'];
+        foreach ($recipientEmails as $recipientEmail) {
+            wp_mail(
+                $recipientEmail,
+                $emailSubject,
+                $emailBody,
+                array(
+                    'From: ' . $fromName . ' <' . $fromEmail . '>',
+                    'Reply-To: ' . $fromName . ' <' . $fromEmail . '>',
+                )
+            );
+        }
 
-    // Send email to recipient(s)
-$recipientEmails = explode(',', $recipient);
-$emailSubject = get_option('custom_letter_editor_subject');
-$emailBody = $generatedLetter;
-$fromName = sanitize_text_field($_POST['name']);
-$fromEmail = sanitize_email($_POST['email']);
+        // Store user information in the database
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'custom_letter_editor_users';
 
-foreach ($recipientEmails as $recipientEmail) {
-    wp_mail(
-        $recipientEmail,
-        $emailSubject,
-        $emailBody,
-        array(
-            'From: ' . $fromName . ' <' . $fromEmail . '>',
-            'Reply-To: ' . $fromName . ' <' . $fromEmail . '>',
-        )
-    );
+        $wpdb->insert(
+            $table_name,
+            array(
+                'name' => $name,
+                'email' => $email,
+                'address' => $address,
+            )
+        );
+    } else {
+        $errorMessage = $gptApiResponse['message'];
+        echo '<div class="notice notice-error"><p>' . $errorMessage . '</p></div>';
+    }
+
+    // Always die or exit at the end of AJAX functions
+    wp_die();
 }
 
-
-    // Store user information in the database
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'custom_letter_editor_users';
-
-    $wpdb->insert(
-        $table_name,
-        array(
-            'name' => $name,
-            'email' => $email,
-            'address' => $address,
-        )
-    );
-} else {
-    $errorMessage = $gptApiResponse['message'];
-    echo '<div class="notice notice-error"><p>' . $errorMessage . '</p></div>';
-}
-
-}
 
 // Function to generate the custom letter using GPT API
-function generate_custom_letter($apiKey, $recipient, $subject, $additionalDetails, $name, $email, $address, $selectedTopic) {
-    // Make a request to the GPT API to generate the letter
-    // You need to replace this code with your actual implementation using the GPT API library
+function generate_custom_letter($apiKey, $recipient, $subject, $additionalDetails, $name, $email, $address, $selectedSentiment) {
+    // Define the API URL
+    $apiUrl = 'https://api.openai.com/v1/engines/davinci-codex/completions';
 
-    // Example implementation using cURL
-$apiUrl = 'https://api.openai.com/v1/engines/text-davinci-003/completions';
-$headers = array(
-    'Content-Type: application/json',
-    'Authorization: Bearer ' . $apiKey,
-);
+    // Define the headers for the API request
+    $headers = array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $apiKey,
+    );
 
- $selectedRecipient = get_option('custom_letter_editor_recipient');  
-$selectedSubject = get_option('custom_letter_editor_subject'); 
-$selectedAdditionalDetails = get_option('custom_letter_editor_additional_details'); 
-    $selectedSentiment = get_option('custom_letter_editor_sentiment');
+    // Prepare the prompt using the input parameters
+    $prompt = "Recipient: $recipient\nSubject: $subject\nAdditional Details: $additionalDetails\nName: $name\nEmail: $email\nAddress: $address\n\nSentiment: $selectedSentiment\nWrite a letter:";
 
-$sentimentInstruction = "Sentiment: $sentiment";
+    // Define the data for the API request
+    $data = array(
+        'prompt' => $prompt,
+        'max_tokens' => 200, // Adjust the number as needed
+    );
 
-$prompt = "Recipient: $selectedRecipient\nSubject: $selectedSubject\nAdditional Details: $selectedAdditionalDetails\nName: $name\nEmail: $email\nAddress: $address\n\n$sentimentInstruction\nWrite a letter to the editor:";
-
-$data = array(
-    'prompt' => $prompt,
-    'max_tokens' => 200, // Adjust the number as needed
-);
-
-
+    // Initialize a new cURL session
     $ch = curl_init();
+
+    // Set the cURL options
     curl_setopt($ch, CURLOPT_URL, $apiUrl);
     curl_setopt($ch, CURLOPT_POST, 1);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
+    // Execute the cURL session and fetch the response
     $response = curl_exec($ch);
+
+    // Close the cURL session
     curl_close($ch);
 
-    // Parse the API response
+    // Decode the response JSON
     $apiResponse = json_decode($response, true);
 
     // Check for errors
@@ -385,17 +388,9 @@ function custom_letter_editor_activate() {
 
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql);
+}
+
+register_activation_hook(__FILE__, 'custom_letter_editor_activate');
 
 add_action('wp_ajax_custom_letter_editor_handle_submission', 'custom_letter_editor_handle_submission');
 add_action('wp_ajax_nopriv_custom_letter_editor_handle_submission', 'custom_letter_editor_handle_submission');
-
-
-    // Set default options
-    add_option('custom_letter_editor_api_key', '');
-    add_option('custom_letter_editor_recipient_email', '');
-    add_option('custom_letter_editor_recaptcha_site_key', '');
-    add_option('custom_letter_editor_recaptcha_secret_key', '');
-    add_option('custom_letter_editor_custom_css', '');
-    add_option('custom_letter_editor_custom_js', '');
-}
-
