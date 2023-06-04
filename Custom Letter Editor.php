@@ -188,7 +188,7 @@ class CustomLetterEditor extends WP_Widget {
             array('description' => 'This is a widget for the custom letter editor')
         );
     }
-public function widget($args, $instance) {
+function widget($args, $instance) {
     echo $args['before_widget'];
     echo $args['before_title'] . $instance['title'] . $args['after_title'];
 
@@ -219,7 +219,7 @@ public function widget($args, $instance) {
 
 
 function custom_letter_editor_handle_submission() {
-    if (!isset($_POST['custom_letter_editor_nonce']) || !wp_verify_nonce($_POST['custom_letter_editor_nonce'], 'custom_letter_editor_handle_submission')) {
+   if (!isset($_POST['custom_letter_editor_nonce']) || !wp_verify_nonce($_POST['custom_letter_editor_nonce'], 'custom_letter_editor_handle_submission')) {
         wp_send_json_error('Invalid nonce.');
     }
 
