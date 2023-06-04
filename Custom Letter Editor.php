@@ -7,15 +7,44 @@
 // Enqueue necessary scripts and stylesheets
 function custom_letter_editor_enqueue_scripts() {
     // Enqueue stylesheets
-    // Enqueue custom CSS
-    $custom_css = get_option('custom_letter_editor_custom_css');
-    wp_add_inline_style('custom-letter-editor-style', $custom_css);
+   wp_enqueue_style('custom-style', get_stylesheet_uri());
 
     // Enqueue custom JavaScript
-    $custom_js = get_option('custom_letter_editor_custom_js');
-    wp_add_inline_script('custom-letter-editor-script', $custom_js);
+    wp_enqueue_script('custom-script', get_template_directory_uri() . '/js/script.js', array(), '1.0', true);
+
+    // Localize the AJAX URL
+    wp_localize_script('custom-letter-editor-script', 'customLetterEditorAjax', array(
+        'ajaxUrl' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('custom-letter-editor-nonce')
+    ));
 }
-add_action('admin_enqueue_scripts', 'custom_letter_editor_enqueue_scripts');
+add_action('wp_enqueue_scripts', 'custom_letter_editor_enqueue_scripts');
+
+// Add your JavaScript code here
+jQuery(document).ready(function($) {
+    // AJAX form submission
+    $('form').on('submit', function(event) {
+        event.preventDefault();
+
+        var form = $(this);
+        var formData = form.serialize();
+
+        // Add the nonce value to the form data
+        formData += '&custom_letter_editor_nonce=' + customLetterEditorAjax.nonce;
+
+        $.ajax({
+            type: 'POST',
+            url: customLetterEditorAjax.ajaxUrl,
+            data: formData,
+            success: function(response) {
+                // Handle the success response
+            },
+            error: function(xhr, status, error) {
+                // Handle the error response
+            }
+        });
+    });
+});
 
 // Add administration menu page
 function custom_letter_editor_add_menu_page() {
