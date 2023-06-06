@@ -1,4 +1,14 @@
 <?php
+/**
+ * Plugin Name: Gravity Forms Custom Letter Editor
+ * Plugin URI: http://www.chelsea-road.com
+ * Description: A custom letter creator for Gravity Forms using GPT.
+ * Version: .97
+ * Author: Aaron Nevins
+ * Author URI: http://www.chelsea-road.com
+ * License: GPL2
+ */
+
 GFForms::include_addon_framework();
 
 class GFCustomLetterEditor extends GFAddOn {
@@ -71,7 +81,7 @@ public function register_export_page() {
         array($this, 'handle_csv_export') // function
     );
 }
-    /**
+ /**
  * Defines the settings fields for the plugin.
  * 
  * This function is used to define the fields that will appear in the settings page of the plugin. 
@@ -80,18 +90,36 @@ public function register_export_page() {
  *
  * @return array Returns an array of settings fields.
  */
+class My_Plugin {
+    public function __construct() {
+        add_filter( 'gform_addon_navigation', array($this, 'create_menu') );
+    }
+
+    public function create_menu($menus) {
+        $menus[] = array(
+            'name' => $this->_slug,
+            'label' => $this->_title,
+            'callback' => array($this, 'plugin_settings_page')
+        );
+        return $menus;
+    }
+
+    public function plugin_settings_page() {
+        GFFormSettings::output_plugin_settings_page($this->plugin_settings_fields());
+    }
+
 public function plugin_settings_fields() {
     return array(
         array(
             'title'  => 'Custom Letter Editor Settings',
             'fields' => array(
-               array(
-        'name'    => 'export_csv',
-        'label'   => '',
-        'type'    => 'save',
-        'value'   => 'Export to CSV',
-        'onclick' => "window.location.href = '" . wp_nonce_url(admin_url('admin.php?page=gf_custom_letter_editor_export'), 'gf_custom_letter_editor_export') . "'",
-    ),
+                array(
+                    'name'    => 'export_csv',
+                    'label'   => '',
+                    'type'    => 'save',
+                    'value'   => 'Export to CSV',
+                    'onclick' => "window.location.href = '" . wp_nonce_url(admin_url('admin.php?page=gf_custom_letter_editor_export'), 'gf_custom_letter_editor_export') . "'",
+                ),
                 array(
                     'name'    => 'api_key',
                     'label'   => 'API Key',
@@ -121,19 +149,21 @@ public function plugin_settings_fields() {
                     'label'   => 'Sentiment',
                     'type'    => 'radio',
                     'choices' => array(
-                array(
-                    'label' => 'Positive',
-                    'value' => 'positive',
-                ),
-               array(
-                    'label' => 'Negative',
-                    'value' => 'negative',
-                    ),                       
+                        array(
+                            'label' => 'Positive',
+                            'value' => 'positive',
+                        ),
+                        array(
+                            'label' => 'Negative',
+                            'value' => 'negative',
+                        ),                       
+                    ),
                 ),
             ),
-        )
+        ),
     );
 }
+
 /**
  * Defines the feed settings fields for the plugin.
  * 
@@ -386,11 +416,11 @@ public function init() {
     add_action('admin_menu', array($this, 'register_export_page'));
     }
 }
-}
+
 /**
  * The activation hook for the plugin.
  *
  * This function is called when the plugin is activated. It calls the static activate() method of the GFCustomLetterEditor class.
  */
 register_activation_hook(__FILE__, array('GFCustomLetterEditor', 'activate'));
-
+?>
