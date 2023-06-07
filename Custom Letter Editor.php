@@ -341,63 +341,98 @@ function custom_letter_editor_handle_submission() {
 }
 
 
-// Function to generate the custom letter using GPT API
-function generate_custom_letter($apiKey, $recipient, $subject, $additionalDetails, $name, $email, $address, $selectedSentiment) {
-    // Define the API URL
-    $apiUrl = 'https://api.openai.com/v1/engines/davinci-codex/completions';
-
-    // Define the headers for the API request
-    $headers = array(
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $apiKey,
-    );
-
-    // Prepare the prompt using the input parameters
-    $prompt = "Recipient: $recipient\nSubject: $subject\nAdditional Details: $additionalDetails\nName: $name\nEmail: $email\nAddress: $address\n\nSentiment: $selectedSentiment\nWrite a letter:";
-
-    // Define the data for the API request
-    $data = array(
-        'prompt' => $prompt,
-        'max_tokens' => 200, // Adjust the number as needed
-    );
-
-    // Initialize a new cURL session
-    $ch = curl_init();
-
-    // Set the cURL options
-    curl_setopt($ch, CURLOPT_URL, $apiUrl);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-    // Execute the cURL session and fetch the response
-    $response = curl_exec($ch);
-
-    // Close the cURL session
-    curl_close($ch);
-
-    // Decode the response JSON
-    $apiResponse = json_decode($response, true);
-
-    // Check for errors
-    if (isset($apiResponse['choices'][0]['text'])) {
-        $generatedLetter = $apiResponse['choices'][0]['text'];
-        return array(
-            'success' => true,
-            'data' => array('generated_letter' => $generatedLetter),
-        );
-    } else {
-        $errorMessage = 'An error occurred while generating the letter.';
-        if (isset($apiResponse['error']['message'])) {
-            $errorMessage = $apiResponse['error']['message'];
+  /**
+ * This function generates a custom letter using OpenAI's GPT-3 API.
+ *
+ * It prepares a prompt using the provided parameters, sends a request to the API, and returns the generated letter.
+ *
+ * @param string $apiKey - The API key for authenticating the API request.
+ * @param string $recipient - The recipient of the letter.
+ * @param string $subject - The subject of the letter.
+ * @param string $additionalDetails - Additional details to be included in the letter.
+ * @param string $name - The name of the sender.
+ * @param string $email - The email of the sender.
+ * @param string $address - The address of the sender.
+ * @param string $sentiment - The sentiment of the letter (e.g., positive, negative, neutral).
+ *
+ * @return array - An associative array containing the API response. If the request is successful, 
+ *                 'success' is set to true and 'data' contains the generated letter. 
+ *                 If an error occurs, 'success' is set to false and 'message' contains an error message.
+ */
+      
+  public function generate_custom_letter($apiKey, $recipient, $subject, $additional_details, $name, $email, $address, $sentiment) {
+        // Input validation
+        if(empty($apiKey) || empty($recipient) || empty($subject) || empty($additional_details) || empty($name) || empty($email) || empty($address) || empty($sentiment)) {
+            return array(
+                'success' => false,
+                'message' => 'Missing parameters.',
+            );
         }
-        return array(
-            'success' => false,
-            'message' => $errorMessage,
+
+        // Define the API URL
+        $apiUrl = 'https://api.openai.com/v1/engines/davinci-codex/completions';
+
+        // Define the headers for the API request
+        $headers = array(
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $apiKey,
         );
+
+        // Prepare the prompt using the input parameters
+        $prompt = "Recipient: $recipient\nSubject: $subject\nAdditional Details: $additional_details\nName: $name\nEmail: $email\nAddress: $address\n\nSentiment: $sentiment\nWrite a letter:";
+
+        // Define the data for the API request
+        $data = array(
+            'prompt' => $prompt,
+            'max_tokens' => 500, // Adjust the number as needed
+        );
+
+        // Initialize a new cURL session
+        $ch = curl_init();
+
+        // Set the cURL options
+        curl_setopt($ch, CURLOPT_URL, $apiUrl);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+        // Execute the cURL session and fetch the response
+        $response = curl_exec($ch);
+
+        // Check for curl error
+        if($response === false) {
+            return array(
+                'success' => false,
+                'message' => curl_error($ch),
+            );
+        }
+
+        // Close the cURL session
+        curl_close($ch);
+
+        // Decode the response JSON
+        $apiResponse = json_decode($response, true);
+
+        // Check for errors
+        if (isset($apiResponse['choices'][0]['text'])) {
+            $generatedLetter = $apiResponse['choices'][0]['text'];
+            return array(
+                'success' => true,
+                'data' => array('generated_letter' => $generatedLetter),
+            );
+        } else {
+            $errorMessage = 'An error occurred while generating the letter.';
+            if (isset($apiResponse['error']['message'])) {
+                $errorMessage = $apiResponse['error']['message'];
+            }
+            return array(
+                'success' => false,
+                'message' => $errorMessage,
+            );
+        }
     }
-}
 
 // Register plugin activation hook
 function custom_letter_editor_activate() {
