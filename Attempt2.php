@@ -305,7 +305,7 @@ public function process_feed($feed, $entry, $form) {
         );
 
         // Prepare the prompt using the input parameters
-        $prompt = "Recipient: $recipient\nSubject: $subject\nAdditional Details: $additional_details\nName: $name\nEmail: $email\nAddress: $address\n\nSentiment: $sentiment\nWrite a letter:";
+        $prompt = "Recipient: $recipient\nSubject: $subject\nAdditional Details: $additional_details\nName: $name\nEmail: $email\nAddress: $address\n\nSentiment: $sentiment\nWrite a letter in the style of an editorial:";
 
         // Define the data for the API request
         $data = array(
