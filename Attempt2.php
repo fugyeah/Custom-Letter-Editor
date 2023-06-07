@@ -287,6 +287,14 @@ public function process_feed($feed, $entry, $form) {
  */
       
   public function generate_custom_letter($apiKey, $recipient, $subject, $additional_details, $name, $email, $address, $sentiment) {
+        // Input validation
+        if(empty($apiKey) || empty($recipient) || empty($subject) || empty($additional_details) || empty($name) || empty($email) || empty($address) || empty($sentiment)) {
+            return array(
+                'success' => false,
+                'message' => 'Missing parameters.',
+            );
+        }
+
         // Define the API URL
         $apiUrl = 'https://api.openai.com/v1/engines/davinci-codex/completions';
 
@@ -295,8 +303,9 @@ public function process_feed($feed, $entry, $form) {
             'Content-Type: application/json',
             'Authorization: Bearer ' . $apiKey,
         );
+
         // Prepare the prompt using the input parameters
- $prompt = "Recipient: $recipient\nSubject: $subject\nAdditional Details: $additionalDetails\nName: $name\nEmail: $email\nAddress: $address\n\nSentiment: $sentiment\nWrite a letter:";
+        $prompt = "Recipient: $recipient\nSubject: $subject\nAdditional Details: $additional_details\nName: $name\nEmail: $email\nAddress: $address\n\nSentiment: $sentiment\nWrite a letter:";
 
         // Define the data for the API request
         $data = array(
@@ -313,9 +322,18 @@ public function process_feed($feed, $entry, $form) {
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
         // Execute the cURL session and fetch the response
         $response = curl_exec($ch);
+
+        // Check for curl error
+        if($response === false) {
+            return array(
+                'success' => false,
+                'message' => curl_error($ch),
+            );
+        }
 
         // Close the cURL session
         curl_close($ch);
