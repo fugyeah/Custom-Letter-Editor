@@ -356,7 +356,10 @@ function custom_letter_editor_handle_submission() {
     // Send email to recipient(s)
     $recipientEmails = explode(',', $selectedRecipient);
     $emailSubject = get_option('custom_letter_editor_subject');
-    $emailBody = $generatedLetter;
+	$emailBody = $generatedLetter;
+	$emailBody .= "Name: " . $name . "\n";
+	$emailBody .= "Email: " . $email . "\n";
+	$emailBody .= "Address: " . $address . "\n";
     $fromName = sanitize_text_field($_POST['name']);
     $fromEmail = sanitize_email($_POST['email']);
 
