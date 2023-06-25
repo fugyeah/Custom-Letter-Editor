@@ -1,7 +1,8 @@
 <?php
 /**
  * Plugin Name: Custom Letter Editor
- * Version: 0.92
+ * Version: 1.00
+ * Author:  Aaron Nevins, Will Jaw
  * Description: A plugin to generate custom letters using GPT API.
  */
 // Enqueue necessary scripts and stylesheets
@@ -226,11 +227,11 @@ function generate_custom_letter($apiKey, $recipient, $subject, $additional_detai
         );
 
         // Prepare the prompt using the input parameters
-        $prompt = "Recipient: $recipient\nSubject: $subject\nName: $name\nEmail: $email\nAddress: $address\n\nSentiment: $sentiment\nWrite a letter to the editor about $additional_details\n:";
+        $prompt = "Recipient: $recipient\nSubject: $subject\nAdditional Details: $additional_details\nName: $name\nEmail: $email\nAddress: $address\nSentiment: $sentiment\nWrite a 300 word editorial using the above facts:";
 
         // Define the data for the API request
         $data = array(
-			'model' => "text-ada-001",
+			'model' => "text-davinci-002",
             'prompt' => $prompt,
             'max_tokens' => 500, // Adjust the number as needed
         );
