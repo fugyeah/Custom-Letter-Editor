@@ -24,7 +24,30 @@ function custom_letter_editor_enqueue_scripts() {
     ));
 }
 
+// Register plugin activation hook
+function custom_letter_editor_activate() {
+    // Create table to store user information
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'custom_letter_editor_users';
 
+    $charset_collate = $wpdb->get_charset_collate();
+
+    $sql = "CREATE TABLE $table_name (
+        id mediumint(9) NOT NULL AUTO_INCREMENT,
+        name text NOT NULL,
+        email text NOT NULL,
+        address text NOT NULL,
+	 generated_letter longtext NOT NULL,
+        PRIMARY KEY (id)
+    ) $charset_collate;";
+
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    dbDelta($sql);
+}
+
+register_activation_hook(__FILE__, 'custom_letter_editor_activate');
+
+//Old Code
 // Add administration menu page
 
 add_action('admin_menu', 'custom_letter_editor_add_menu_page');
@@ -87,6 +110,50 @@ function myplugin_api_key_callback() {
 }
 
 
+//** This function is hooked to the admin_post_download_csv action, so it's executed when you visit the URL http://yourwebsite.com/wp-admin/admin-post.php?action=download_csv.//
+
+function export_users_to_csv() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'custom_letter_editor_users';
+
+    $results = $wpdb->get_results("SELECT * FROM $table_name", ARRAY_A);
+
+    if (empty($results)) {
+        return;
+    }
+
+    $csv_output = fopen('php://output', 'w');
+
+    // Output the column headings
+    fputcsv($csv_output, array_keys($results[0]));
+
+    // Output the rows
+    foreach ($results as $row) {
+        fputcsv($csv_output, $row);
+    }
+
+    fclose($csv_output);
+}
+
+// Use this function to download the CSV file
+function download_users_csv() {
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="users.csv"');
+
+    export_users_to_csv();
+
+    exit;
+}
+
+// Hook the function to a custom URL
+add_action('admin_post_download_csv', 'download_users_csv');
+//END download
+
+//OLD CODE
 // Create settings page content
 function custom_letter_editor_settings_page_content() {
     // Save plugin settings
@@ -385,6 +452,7 @@ function custom_letter_editor_handle_submission() {
             'name' => $name,
             'email' => $email,
             'address' => $address,
+	 'generated_letter' => $generatedLetter,
         )
     );
 
