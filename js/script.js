@@ -33,6 +33,9 @@ jQuery(document).ready(function($) {
                     // Insert the generated letter into the div
                     $('#generated-letter').html('<h2>Generated Letter</h2><p>' + generatedLetter + '</p>');
 
+                        // Replace the form content with a success message
+                    form.html('<p>Form submitted successfully!</p>');
+                    
                     // Display a success message with the response text
                     alert('Form submitted successfully! Response: ' + generatedLetter);
                 } else {
