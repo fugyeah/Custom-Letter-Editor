@@ -316,14 +316,24 @@ function generate_custom_letter($apiKey, $recipient, $subject, $additional_detai
 
         // Execute the cURL session and fetch the response
         $response = curl_exec($ch);
-
-        // Check for curl error
-        if($response === false) {
-            return array(
-                'success' => false,
-                'message' => curl_error($ch),
-            );
+ 
+    // Check the HTTP status code
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($httpCode == 429) {
+        // We hit the rate limit
+        $retryAfter = curl_getinfo($ch, CURLINFO_RETRY_AFTER);
+        if ($retryAfter) {
+            // The server told us how long to wait
+            sleep($retryAfter);
+        } else {
+            // The server didn't tell us how long to wait, so let's wait for a default period and then retry
+            // The default period is calculated as 2^retryCount seconds, with a maximum of 64 seconds
+            $waitTime = min(pow(2, $retryCount), 64);
+            sleep($waitTime);
         }
+        // Retry the request, increasing the retry count
+        return generate_custom_letter($apiKey, $recipient, $subject, $additional_details, $name, $email, $address, $sentiment, $retryCount + 1);
+    }
 
         // Close the cURL session
         curl_close($ch);
