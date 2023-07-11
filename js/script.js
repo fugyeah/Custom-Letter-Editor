@@ -60,7 +60,7 @@ jQuery(document).ready(function($) {
     var isSubmitting = false; // Flag to check if form is currently being submitted
 
     // AJAX form submission
-    $('form').on('submit', function(event) {
+    $('#custom-letter-form').on('submit', function(event) {
         event.preventDefault();
 
         // If form is currently being submitted, prevent further submissions
@@ -89,7 +89,7 @@ jQuery(document).ready(function($) {
                     var generatedLetter = response.data.generated_letter;
 
                     // Insert the generated letter into the div
-                    $('#generated-letter').html('<h2>Generated Letter</h2><p>' + generatedLetter + '</p>');
+                    $('#generated-letter-widget').html('<h2>Generated Letter</h2><p>' + generatedLetter + '</p>');
 
                     // Ask for confirmation
                     if (window.confirm('Do you want to send this letter?')) {
@@ -102,7 +102,8 @@ jQuery(document).ready(function($) {
                             data: formData,
                             success: function(response) {
                                 console.log('Email sent:', response);
-                                alert('Email sent successfully!');
+                                // Replace the form content with a success message
+                                $('#custom-letter-form').html('<p>Email sent successfully!</p>');
                             },
                             error: function(xhr, status, error) {
                                 console.log('Email send error:', xhr.responseText);
