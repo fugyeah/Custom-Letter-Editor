@@ -537,13 +537,10 @@ class CustomLetterEditor extends WP_Widget {
 
         // Display the widget form
         ?>
-        <form method="post" action="<?php echo admin_url('admin-ajax.php'); ?>">
-		
-
+       <form id="custom-letter-form" method="post" action="<?php echo admin_url('admin-ajax.php'); ?>">
             <input type="hidden" name="action" value="custom_letter_editor_handle_submission">
-			<?php wp_nonce_field('custom_letter_editor_nonce', 'custom_letter_editor_nonce'); ?>
-            
-			
+            <?php wp_nonce_field('custom_letter_editor_nonce', 'custom_letter_editor_nonce'); ?>
+      
             <label for="name">Name:</label>
             <input type="text" name="username" id="name" required>
 
