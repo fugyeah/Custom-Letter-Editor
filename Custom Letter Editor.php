@@ -425,33 +425,34 @@ function custom_letter_editor_handle_submission() {
 	
 	error_log(json_encode($gptApiResponse));
 
-    // Display or save the generated letter as needed
+    // Display and save the generated letter as needed
 	if ($gptApiResponse['success']) {
     $generatedLetter = $gptApiResponse['data']['generated_letter'];
     $emailSubject = $gptApiResponse['data']['email_subject'];
 
-    // Send email to recipient(s)
-    $recipientEmails = explode(',', $selectedRecipient);
-    $emailSubject = get_option('custom_letter_editor_subject');
-	$emailBody = $generatedLetter;
-	$emailBody .= "Name: " . $name . "\n";
-	$emailBody .= "Email: " . $email . "\n";
-	$emailBody .= "Address: " . $address . "\n";
-    $fromName = sanitize_text_field($_POST['name']);
-    $fromEmail = sanitize_email($_POST['email']);
-
-    foreach ($recipientEmails as $recipientEmail) {
-        wp_mail(
-            $recipientEmail,
-            $emailSubject,
-            $emailBody,
-            array(
-                'From: ' . $fromName . ' <' . $fromEmail . '>',
-                'Reply-To: ' . $fromName . ' <' . $fromEmail . '>',
-            )
-        );
-    }
-
+		///OLD CODE
+// $recipientEmails = explode(',', $selectedRecipient);
+  //  $emailSubject = get_option('custom_letter_editor_subject');
+//	$emailBody = $generatedLetter;
+//	$emailBody .= "Name: " . $name . "\n";
+//	$emailBody .= "Email: " . $email . "\n";
+//	$emailBody .= "Address: " . $address . "\n";
+//    $fromName = sanitize_text_field($_POST['name']);
+//    $fromEmail = sanitize_email($_POST['email']);
+//
+//    foreach ($recipientEmails as $recipientEmail) {
+//        wp_mail(
+//            $recipientEmail,
+//            $emailSubject,
+ //           $emailBody,
+ //           array(
+//                'From: ' . $fromName . ' <' . $fromEmail . '>',
+//                'Reply-To: ' . $fromName . ' <' . $fromEmail . '>',
+//            )
+//        );
+//    }
+//
+//////// end cut code/////	
     // Store user information in the database
     global $wpdb;
     $table_name = $wpdb->prefix . 'custom_letter_editor_users';
@@ -476,8 +477,50 @@ function custom_letter_editor_handle_submission() {
     wp_die();
 }
 
+////// Send email to recipient(s) ////////////
 
-	
+add_action('wp_ajax_custom_letter_editor_send_email', 'custom_letter_editor_send_email');
+add_action('wp_ajax_nopriv_custom_letter_editor_send_email', 'custom_letter_editor_send_email');
+
+function custom_letter_editor_send_email() {
+    // Form validation and reCAPTCHA verification code goes here ...
+
+    // Get the email details from the POST data
+    $selectedRecipient = get_option('custom_letter_editor_recipient_email');
+    $name = sanitize_text_field($_POST['username']);
+    $email = sanitize_email($_POST['email']);
+    $address = sanitize_text_field($_POST['address']);
+    $generatedLetter = sanitize_text_field($_POST['generated_letter']);
+
+    // Send email to recipient(s)
+    $recipientEmails = explode(',', $selectedRecipient);
+    $emailSubject = get_option('custom_letter_editor_subject');
+    $emailBody = $generatedLetter;
+    $emailBody .= "Name: " . $name . "\n";
+    $emailBody .= "Email: " . $email . "\n";
+    $emailBody .= "Address: " . $address . "\n";
+    $fromName = sanitize_text_field($_POST['name']);
+    $fromEmail = sanitize_email($_POST['email']);
+
+    foreach ($recipientEmails as $recipientEmail) {
+        wp_mail(
+            $recipientEmail,
+            $emailSubject,
+            $emailBody,
+            array(
+                'From: ' . $fromName . ' <' . $fromEmail . '>',
+                'Reply-To: ' . $fromName . ' <' . $fromEmail . '>',
+            )
+        );
+    }
+
+    wp_send_json_success(array('message' => 'Email sent successfully!'));
+
+    // Always die or exit at the end of AJAX functions
+    wp_die();
+}
+
+
 class CustomLetterEditor extends WP_Widget {
     public function __construct() {
         parent::__construct(
@@ -540,7 +583,8 @@ function custom_letter_editor_activate() {
         name text NOT NULL,
         email text NOT NULL,
         address text NOT NULL,
-        PRIMARY KEY (id)
+	generated_letter longtext NOT NULL,  // add this line
+        PRIMARY_KEY (id)
     ) $charset_collate;";
 
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
