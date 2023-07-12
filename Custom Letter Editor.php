@@ -18,6 +18,11 @@ function custom_letter_editor_enqueue_scripts() {
     // Enqueue jQuery
     wp_enqueue_script('jquery');
 
+$recaptcha_site_key = get_option('custom_letter_editor_recaptcha_site_key');
+wp_localize_script('custom-script', 'customLetterEditor', array(
+    'recaptcha_site_key' => $recaptcha_site_key,
+));
+
     // Localize the AJAX URL
     wp_localize_script('custom-script', 'customLetterEditorAjax', array(
         'ajaxUrl' => admin_url('admin-ajax.php')
