@@ -49,6 +49,7 @@ class CustomLetterEditor extends WP_Widget {
 
             <input type="submit" value="Submit">
         </form>
+    <div id="generated-letter-widget"></div>
         <?php
 
         echo $args['after_widget'];
