@@ -565,27 +565,3 @@ function custom_letter_editor_register_widget() {
     register_widget('CustomLetterEditor');
 }
 
-
-
-// Register plugin activation hook
-function custom_letter_editor_activate() {
-    // Create table to store user information
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'custom_letter_editor_users';
-
-    $charset_collate = $wpdb->get_charset_collate();
-
-    $sql = "CREATE TABLE $table_name (
-        id mediumint(9) NOT NULL AUTO_INCREMENT,
-        name text NOT NULL,
-        email text NOT NULL,
-        address text NOT NULL,
-	generated_letter longtext NOT NULL,  // add this line
-        PRIMARY_KEY (id)
-    ) $charset_collate;";
-
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql);
-}
-
-register_activation_hook(__FILE__, 'custom_letter_editor_activate');
