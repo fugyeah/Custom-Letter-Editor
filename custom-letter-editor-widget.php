@@ -35,6 +35,7 @@ class CustomLetterEditor extends WP_Widget {
         ?>
        <form id="custom-letter-form" method="post" action="<?php echo admin_url('admin-ajax.php'); ?>">
             <input type="hidden" name="action" value="custom_letter_editor_handle_submission">
+           <input type="hidden" id="g-recaptcha-response" name="g-recaptcha-response" value="">
             <?php wp_nonce_field('custom_letter_editor_nonce', 'custom_letter_editor_nonce'); ?>
       
             <label for="name">Name:</label>
