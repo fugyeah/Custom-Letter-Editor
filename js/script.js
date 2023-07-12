@@ -11,12 +11,18 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        var form = $(this);
-        var formData = form.serialize();
-
         // Set flag to true to indicate form is being submitted
         isSubmitting = true;
 
+        var form = $(this);
+        var formData = form.serialize();
+
+        grecaptcha.ready(function() {
+           grecaptcha.execute(customLetterEditor.recaptcha_site_key, {action: 'submit'}).then(function(token) {
+                // Add the token to the form data
+                var formData = $('#custom-letter-form').serialize() + "&g-recaptcha-response=" + token;
+
+        
         $.ajax({
             type: 'POST',
             url: customLetterEditorAjax.ajaxUrl,
