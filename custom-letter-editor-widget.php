@@ -8,10 +8,28 @@ class CustomLetterEditor extends WP_Widget {
         );
     }
 
+    public function form($instance) {
+        $title = !empty($instance['title']) ? $instance['title'] : esc_html__('New title', 'text_domain');
+        ?>
+        <p>
+        <label for="<?php echo esc_attr($this->get_field_id('title')); ?>"><?php esc_attr_e('Title:', 'text_domain'); ?></label> 
+        <input class="widefat" id="<?php echo esc_attr($this->get_field_id('title')); ?>" name="<?php echo esc_attr($this->get_field_name('title')); ?>" type="text" value="<?php echo esc_attr($title); ?>">
+        </p>
+        <?php
+    }
+
+    public function update($new_instance, $old_instance) {
+        $instance = array();
+        $instance['title'] = (!empty($new_instance['title'])) ? strip_tags($new_instance['title']) : '';
+
+        return $instance;
+    }
+
     public function widget($args, $instance) {
         echo $args['before_widget'];
-        echo $args['before_title'] . $instance['title'] . $args['after_title'];
-
+        if (!empty($instance['title'])) {
+            echo $args['before_title'] . apply_filters('widget_title', $instance['title']) . $args['after_title'];
+        }
 
         // Display the widget form
         ?>
@@ -36,8 +54,6 @@ class CustomLetterEditor extends WP_Widget {
     }
 }
 // Register widget
-// 
-
 add_action('widgets_init', 'custom_letter_editor_register_widget');
 function custom_letter_editor_register_widget() {
     register_widget('CustomLetterEditor');
