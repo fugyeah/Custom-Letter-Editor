@@ -11,17 +11,11 @@ jQuery(document).ready(function($) {
             return;
         }
 
-            var form = $(this);
+        var form = $(this);
         var formData = form.serialize();
-    // Set flag to true to indicate form is being submitted
+        // Set flag to true to indicate form is being submitted
         isSubmitting = true;
 
- //       grecaptcha.ready(function() {
- //          grecaptcha.execute(customLetterEditor.recaptcha_site_key, {action: 'submit'}).then(function(token) {
-//                // Add the token to the form data
-//                var formData = $('#custom-letter-form').serialize() + "&g-recaptcha-response=" + token;
-
-        
         $.ajax({
             type: 'POST',
             url: customLetterEditorAjax.ajaxUrl,
@@ -42,6 +36,7 @@ jQuery(document).ready(function($) {
                     if (window.confirm('Do you want to send this letter?')) {
                         // User clicked OK, send the email
                         formData += '&action=custom_letter_editor_send_email&generated_letter=' + encodeURIComponent(generatedLetter);
+                        formData += '&custom_letter_editor_email_nonce=' + $('#custom_letter_editor_email_nonce').val();
 
                         $.ajax({
                             type: 'POST',
@@ -57,7 +52,7 @@ jQuery(document).ready(function($) {
                             },
                         });
                     } else {
-                        // User clicked Cancel, handle it here ...
+                            location.reload();
                     }
                 } else {
                     // Handle error
