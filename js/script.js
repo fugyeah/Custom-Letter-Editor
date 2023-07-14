@@ -13,6 +13,8 @@ jQuery(document).ready(function($) {
 
         var form = $(this);
         var formData = form.serialize();
+formData += '&custom_letter_editor_submission_nonce=' + $('#custom_letter_editor_submission_nonce').val();
+
         // Set flag to true to indicate form is being submitted
         isSubmitting = true;
 
