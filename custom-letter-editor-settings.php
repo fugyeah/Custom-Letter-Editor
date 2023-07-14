@@ -209,6 +209,9 @@ function custom_letter_editor_settings_page_content() {
                     <input type="radio" name="sentiment" id="sentiment_negative" value="negative" <?php echo (get_option('custom_letter_editor_sentiment') === 'negative') ? 'checked' : ''; ?>><br>
                 </td>
             </tr>
+            <tr>
+                <th scope="row"><label for="export">Export <a href="/wp-admin/admin-post.php?action=download_csv">CSV</a></label></th>
+                </tr>
         </table>
         <input type="submit" name="custom_letter_editor_settings_submit" class="button button-primary" value="Save Settings">
     </form>
