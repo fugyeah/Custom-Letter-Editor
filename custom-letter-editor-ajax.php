@@ -19,6 +19,7 @@
  */
       
 function generate_custom_letter($apiKey, $recipient, $subject, $additional_details, $name, $email, $address, $sentiment) {
+
         // Input validation
         if(empty($apiKey) || empty($recipient) || empty($subject) || empty($additional_details) || empty($name) || empty($email) || empty($address) || empty($sentiment)) {
             return array(
@@ -59,7 +60,10 @@ function generate_custom_letter($apiKey, $recipient, $subject, $additional_detai
 
         // Execute the cURL session and fetch the response
         $response = curl_exec($ch);
- 
+ //error logging
+	if(curl_errno($ch)){
+    error_log('Curl error: ' . curl_error($ch));
+}
     // Check the HTTP status code
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     if ($httpCode == 429) {
@@ -83,7 +87,8 @@ function generate_custom_letter($apiKey, $recipient, $subject, $additional_detai
 
         // Decode the response JSON
         $apiResponse = json_decode($response, true);
-		//echo $apiResponse;
+		//error logging
+error_log('API response: ' . json_encode($apiResponse));
 
         // Check for errors
         if (isset($apiResponse['choices'][0]['text'])) {
