@@ -19,14 +19,20 @@
  */
       
 function generate_custom_letter($apiKey, $recipient, $subject, $additional_details, $name, $email, $address, $sentiment) {
-
-        // Input validation
-        if(empty($apiKey) || empty($recipient) || empty($subject) || empty($additional_details) || empty($name) || empty($email) || empty($address) || empty($sentiment)) {
-            return array(
-                'success' => false,
-                'message' => 'Missing parameters.',
-            );
-        }
+    // Input validation and sanitization
+    if(empty($apiKey) || empty($recipient) || empty($subject) || empty($additional_details) || empty($name) || empty($email) || empty($address) || empty($sentiment)) {
+        return array(
+            'success' => false,
+            'message' => 'Missing parameters.',
+        );
+    }
+    $recipient = sanitize_text_field($recipient);
+    $subject = sanitize_text_field($subject);
+    $additional_details = sanitize_text_field($additional_details);
+    $name = sanitize_text_field($name);
+    $email = sanitize_email($email);
+    $address = sanitize_text_field($address);
+    $sentiment = sanitize_text_field($sentiment);
 
         // Define the API URL
         $apiUrl = 'https://api.openai.com/v1/completions';
@@ -60,10 +66,14 @@ function generate_custom_letter($apiKey, $recipient, $subject, $additional_detai
 
         // Execute the cURL session and fetch the response
         $response = curl_exec($ch);
- //error logging
-	if(curl_errno($ch)){
-    error_log('Curl error: ' . curl_error($ch));
-}
+ 
+    // Check for cURL errors and handle them
+    if (curl_errno($ch)) {
+        return array(
+            'success' => false,
+            'message' => curl_error($ch),
+        );
+    }
     // Check the HTTP status code
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     if ($httpCode == 429) {
@@ -87,8 +97,7 @@ function generate_custom_letter($apiKey, $recipient, $subject, $additional_detai
 
         // Decode the response JSON
         $apiResponse = json_decode($response, true);
-		//error logging
-error_log('API response: ' . json_encode($apiResponse));
+		//echo $apiResponse;
 
         // Check for errors
         if (isset($apiResponse['choices'][0]['text'])) {
@@ -109,53 +118,48 @@ error_log('API response: ' . json_encode($apiResponse));
         }
     }
 
-
-
-
-
 add_action('wp_ajax_custom_letter_editor_handle_submission', 'custom_letter_editor_handle_submission');
 add_action('wp_ajax_nopriv_custom_letter_editor_handle_submission', 'custom_letter_editor_handle_submission');
 
 function custom_letter_editor_handle_submission() {
-	//$retrieved_nonce = $_REQUEST['_wpnonce'];
-	
-    if (!isset($_POST['custom_letter_editor_nonce'])) {
+    if (!isset($_POST['custom_letter_editor_submission_nonce']) || !wp_verify_nonce($_POST['custom_letter_editor_submission_nonce'], 'custom_letter_editor_handle_submission')) {
         wp_send_json_error(array('success' => false, 'message' => 'Invalid nonce.'));
-		
     }
-	if (!wp_verify_nonce($_POST['custom_letter_editor_nonce'], 'custom_letter_editor_nonce')) {
-		wp_send_json_error(array('success' => false, 'message' => 'wp_verify_nonce didn\'t work'));
-	}
-	
-	
+    
+    // and
+    
+    if (!isset($_POST['custom_letter_editor_email_nonce']) || !wp_verify_nonce($_POST['custom_letter_editor_email_nonce'], 'custom_letter_editor_send_email')) {
+        wp_send_json_error(array('success' => false, 'message' => 'Invalid nonce.'));
+    }
+    
+		
     // Verify the reCAPTCHA response
-    $recaptcha_response = $_POST['g-recaptcha-response'];
-    $recaptcha_secret_key = get_option('custom_letter_editor_recaptcha_secret_key');
-    $recaptcha_verify_url = 'https://www.google.com/recaptcha/api/siteverify';
+//    $recaptcha_response = $_POST['g-recaptcha-response'];
+//    $recaptcha_secret_key = get_option('custom_letter_editor_recaptcha_secret_key');
+//    $recaptcha_verify_url = 'https://www.google.com/recaptcha/api/siteverify';
+//
+//    $recaptcha_data = array(
+//        'secret' => $recaptcha_secret_key,
+//        'response' => $recaptcha_response,
+//        'remoteip' => $_SERVER['REMOTE_ADDR'],
+//    );
+//
+//    $recaptcha_options = array(
+//        'http' => array(
+//            'method' => 'POST',
+//            'header' => 'Content-type: application/x-www-form-urlencoded',
+//            'content' => http_build_query($recaptcha_data),
+//        ),
+//    );
+//
+//    $recaptcha_context = stream_context_create($recaptcha_options);
+//    $recaptcha_result = file_get_contents($recaptcha_verify_url, false, $recaptcha_context);
+//    $recaptcha_json = json_decode($recaptcha_result, true);
 
-    $recaptcha_data = array(
-        'secret' => $recaptcha_secret_key,
-        'response' => $recaptcha_response,
-        'remoteip' => $_SERVER['REMOTE_ADDR'],
-    );
-
-    $recaptcha_options = array(
-        'http' => array(
-            'method' => 'POST',
-            'header' => 'Content-type: application/x-www-form-urlencoded',
-            'content' => http_build_query($recaptcha_data),
-        ),
-    );
-
-    $recaptcha_context = stream_context_create($recaptcha_options);
-    $recaptcha_result = file_get_contents($recaptcha_verify_url, false, $recaptcha_context);
-    $recaptcha_json = json_decode($recaptcha_result, true);
-
-    /*if (!$recaptcha_json['success']) {
-        wp_send_json_error(array('success' => false, 'message' => 'reCAPTCHA verification failed.'));
-    }*/
+//  if (!$recaptcha_json['success']) {
+//        wp_send_json_error(array('success' => false, 'message' => 'reCAPTCHA verification failed.'));
+//    }
 	
-
     // Process form submission and generate letter
     $apiKey = get_option('custom_letter_editor_api_key');
     $selectedRecipient = get_option('custom_letter_editor_recipient_email');
@@ -173,33 +177,34 @@ function custom_letter_editor_handle_submission() {
 	
 	error_log(json_encode($gptApiResponse));
 
-    // Display or save the generated letter as needed
+    // Display and save the generated letter as needed
 	if ($gptApiResponse['success']) {
     $generatedLetter = $gptApiResponse['data']['generated_letter'];
     $emailSubject = $gptApiResponse['data']['email_subject'];
 
-    // Send email to recipient(s)
-    $recipientEmails = explode(',', $selectedRecipient);
-    $emailSubject = get_option('custom_letter_editor_subject');
-	$emailBody = $generatedLetter;
-	$emailBody .= "Name: " . $name . "\n";
-	$emailBody .= "Email: " . $email . "\n";
-	$emailBody .= "Address: " . $address . "\n";
-    $fromName = sanitize_text_field($_POST['name']);
-    $fromEmail = sanitize_email($_POST['email']);
-
-    foreach ($recipientEmails as $recipientEmail) {
-        wp_mail(
-            $recipientEmail,
-            $emailSubject,
-            $emailBody,
-            array(
-                'From: ' . $fromName . ' <' . $fromEmail . '>',
-                'Reply-To: ' . $fromName . ' <' . $fromEmail . '>',
-            )
-        );
-    }
-
+		///OLD CODE
+// $recipientEmails = explode(',', $selectedRecipient);
+  //  $emailSubject = get_option('custom_letter_editor_subject');
+//	$emailBody = $generatedLetter;
+//	$emailBody .= "Name: " . $name . "\n";
+//	$emailBody .= "Email: " . $email . "\n";
+//	$emailBody .= "Address: " . $address . "\n";
+//    $fromName = sanitize_text_field($_POST['name']);
+//    $fromEmail = sanitize_email($_POST['email']);
+//
+//    foreach ($recipientEmails as $recipientEmail) {
+//        wp_mail(
+//            $recipientEmail,
+//            $emailSubject,
+ //           $emailBody,
+ //           array(
+//                'From: ' . $fromName . ' <' . $fromEmail . '>',
+//                'Reply-To: ' . $fromName . ' <' . $fromEmail . '>',
+//            )
+//        );
+//    }
+//
+//////// end cut code/////	
     // Store user information in the database
     global $wpdb;
     $table_name = $wpdb->prefix . 'custom_letter_editor_users';
@@ -224,3 +229,81 @@ function custom_letter_editor_handle_submission() {
     wp_die();
 }
 
+////// Send email to recipient(s) ////////////
+
+add_action('wp_ajax_custom_letter_editor_send_email', 'custom_letter_editor_send_email');
+add_action('wp_ajax_nopriv_custom_letter_editor_send_email', 'custom_letter_editor_send_email');
+
+function custom_letter_editor_send_email() {
+    // Check the nonce
+    if (!isset($_POST['custom_letter_editor_nonce']) || !wp_verify_nonce($_POST['custom_letter_editor_nonce'], 'custom_letter_editor_nonce')) {
+        wp_send_json_error(array('success' => false, 'message' => 'Invalid nonce.'));
+    }
+    
+//    // Verify the reCAPTCHA response
+//    $recaptcha_response = $_POST['g-recaptcha-response'];
+//    $recaptcha_secret_key = get_option('custom_letter_editor_recaptcha_secret_key');
+//    $recaptcha_verify_url = 'https://www.google.com/recaptcha/api/siteverify';
+
+//    $recaptcha_data = array(
+//        'secret' => $recaptcha_secret_key,
+//        'response' => $recaptcha_response,
+//        'remoteip' => $_SERVER['REMOTE_ADDR'],
+//    );
+
+//    $recaptcha_options = array(
+//        'http' => array(
+//            'method' => 'POST',
+//            'header' => 'Content-type: application/x-www-form-urlencoded',
+//            'content' => http_build_query($recaptcha_data),
+//        ),
+//    );
+//
+//    $recaptcha_context = stream_context_create($recaptcha_options);
+//    $recaptcha_result = file_get_contents($recaptcha_verify_url, false, $recaptcha_context);
+//    $recaptcha_json = json_decode($recaptcha_result, true);
+//
+//    if (!$recaptcha_json['success']) {
+////        wp_send_json_error(array('success' => false, 'message' => 'reCAPTCHA verification failed.'));
+//    }
+
+    // Form validation
+    if (empty($_POST['username']) || empty($_POST['email']) || empty($_POST['address']) || empty($_POST['generated_letter'])) {
+        wp_send_json_error(array('success' => false, 'message' => 'Missing parameters.'));
+    }
+
+    // Get the email details from the POST data and sanitize them
+    $selectedRecipient = get_option('custom_letter_editor_recipient_email');
+    $name = sanitize_text_field($_POST['username']);
+    $email = sanitize_email($_POST['email']);
+    $address = sanitize_text_field($_POST['address']);
+    $generatedLetter = wp_kses_post($_POST['generated_letter']);
+
+
+    // Send email to recipient(s)
+    $recipientEmails = explode(',', $selectedRecipient);
+    $emailSubject = get_option('custom_letter_editor_subject');
+    $emailBody = $generatedLetter;
+    $emailBody .= "Name: " . $name . "\n";
+    $emailBody .= "Email: " . $email . "\n";
+    $emailBody .= "Address: " . $address . "\n";
+    $fromName = sanitize_text_field($_POST['name']);
+    $fromEmail = sanitize_email($_POST['email']);
+
+    foreach ($recipientEmails as $recipientEmail) {
+        wp_mail(
+            $recipientEmail,
+            $emailSubject,
+            $emailBody,
+            array(
+                'From: ' . $fromName . ' <' . $fromEmail . '>',
+                'Reply-To: ' . $fromName . ' <' . $fromEmail . '>',
+            )
+        );
+    }
+
+    wp_send_json_success(array('message' => 'Email sent successfully!'));
+
+    // Always die or exit at the end of AJAX functions
+    wp_die();
+}
