@@ -1,28 +1,41 @@
 <?php
 /**
  * Plugin Name: Custom Letter Editor
- * Version: 2.00
+ * Version: 2.01
  * Author:  Aaron Nevins, Will Jaw
  * Description: A plugin to generate custom letters using GPT API.
  */
+define('PLUGIN_VERSION', '2.01');
 
 // Enqueue necessary scripts and stylesheets
 add_action('wp_enqueue_scripts', 'custom_letter_editor_enqueue_scripts');
 function custom_letter_editor_enqueue_scripts() {
     // Enqueue stylesheets
     wp_enqueue_style('custom-style', get_stylesheet_uri());
+    
     // Enqueue custom JavaScript
     wp_enqueue_script('custom-script', plugin_dir_url(__FILE__) . 'js/script.js', array('jquery'), '1.0', true);
+    
     // Enqueue jQuery
     wp_enqueue_script('jquery');
+    
+    // Enqueue email.js script
     wp_enqueue_script('custom-letter-editor-js', plugin_dir_url(__FILE__) . 'js/email.js', array('jquery'), '1.0.0', true);
+
+    // Fetch the talking points, convert them to an array
+    $talkingPointsString = get_option('custom_letter_editor_talking_points', '');
+    $talkingPoints = explode(', ', $talkingPointsString);
 
     // Localize the script with new data
     $ajax_data = array(
         'ajaxUrl' => admin_url('admin-ajax.php'),
+        'talkingPoints' => $talkingPoints
     );
-    wp_localize_script('custom-letter-editor-js', 'customLetterEditorAjax', $ajax_data);
+    
+    wp_localize_script('custom-script', 'customLetterEditorAdmin', $ajax_data); // Localize your main script.js
+    wp_localize_script('custom-letter-editor-js', 'customLetterEditorAjax', $ajax_data); // Localize your email.js if needed
 }
+
 
 // Plugin Activation - Table creation
 register_activation_hook(__FILE__, 'custom_letter_editor_activate');

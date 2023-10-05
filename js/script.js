@@ -1,6 +1,52 @@
 jQuery(document).ready(function($) {
     var isSubmitting = false;
 
+    // Event listener for the Generate button
+    $('#generate-message').click(function(e) {
+        e.preventDefault();
+
+        // Get the user's name and extra detail
+        const senderName = $('#name').val();
+        const extra = $('#extra-detail').val();
+
+        // Get the random talking points
+        const selectedPoints = getRandomTalkingPoints();
+
+        // Make the AJAX request
+        $.ajax({
+            url: '/wp-admin/admin-ajax.php',
+            type: 'POST',
+            action: 'custom_letter_editor_handle_submission',
+            data: {
+                action: 'generate_message',
+                senderName: senderName,
+                selectedPoints: selectedPoints,
+                extra: extra
+            },
+            success: function(response) {
+                // Display the generated message in the textarea
+                $('#generatedMessage').val(response.data);
+            },
+            error: function(error) {
+                console.error("There was an error generating the message:", error);
+            }
+        });
+    });
+
+    // Function to get a random subset of the talking points
+    function getRandomTalkingPoints() {
+        const talkingPoints = customLetterEditorAdmin.talkingPoints || []; // Fetching from localized script
+
+        const randomIndices = [];
+        while (randomIndices.length < 2) {
+            const randomIndex = Math.floor(Math.random() * talkingPoints.length);
+            if (!randomIndices.includes(randomIndex)) {
+                randomIndices.push(randomIndex);
+            }
+        }
+        return randomIndices.map(index => talkingPoints[index]).join(' ');
+    }
+
     $('#custom-letter-form').on('submit', function(event) {
         event.preventDefault();
 
@@ -9,20 +55,8 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        var form = $(this);
-        var formData = form.serialize();
-
-        isSubmitting = true;
-
-        generateMessageViaWP(function(generatedMessage) {
-            $('#message-response').html('<p>' + generatedMessage + '</p>');
-            $('#confirm-send-email, #cancel-send-email').show();
-        });
-    });
-
-    $('#confirm-send-email').click(function() {
         var formData = $('#custom-letter-form').serialize();
-        formData += '&action=custom_letter_editor_send_email&generated_letter=' + encodeURIComponent($('#message-response p').text());
+        formData += '&action=custom_letter_editor_send_email&generated_letter=' + encodeURIComponent($('#generatedMessage').val());
 
         $.ajax({
             type: 'POST',
@@ -43,39 +77,8 @@ jQuery(document).ready(function($) {
     });
 
     $('#cancel-send-email').click(function() {
-        $('#message-response').empty();
+        $('#generatedMessage').val('');
         $('#custom-letter-form')[0].reset();
         $('#confirm-send-email, #cancel-send-email').hide();
     });
-
-    function generateMessageViaWP(callback) {
-        var formData = $('#custom-letter-form').serializeArray();
-        var data = {
-            action: "generate_message",
-            username: formData.find(f => f.name === 'username').value,
-            email: formData.find(f => f.name === 'email').value,
-            address: formData.find(f => f.name === 'address').value,
-            extra: formData.find(f => f.name === 'extra').value
-        };
-    
-        $.ajax({
-            url: "/custom-letter-editor-ajax.php",
-            type: "POST",
-            data: data,
-            success: function(response) {
-                // Handle the response here
-                if (response.choices && response.choices[0] && response.choices[0].text) {
-                    let generatedMessage = response.choices[0].text.trim();
-                    callback(generatedMessage);
-                } else {
-                    console.error("Error generating message:", response);
-                    isSubmitting = false;
-                }
-            },
-            error: function(error) {
-                console.error("AJAX error:", error);
-                isSubmitting = false;
-            }
-        });
-    }
 });

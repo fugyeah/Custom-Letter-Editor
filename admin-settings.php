@@ -31,6 +31,7 @@ function custom_letter_editor_add_menu_page() {
     );
 }
 
+
 // Display the settings page content
 function custom_letter_editor_settings_page_content() {
     // Save plugin settings
@@ -46,7 +47,8 @@ function custom_letter_editor_settings_page_content() {
 
         // Save the recipient email address
         if (isset($_POST['recipient_email'])) {
-            $recipient_email = sanitize_text_field($_POST['recipient_email']);
+            $recipient_emails = array_map('sanitize_email', explode(',', $_POST['recipient_email']));
+            $recipient_email = implode(',', $recipient_emails);
             update_option('custom_letter_editor_recipient_email', $recipient_email);
         }
 
@@ -121,15 +123,21 @@ function custom_letter_editor_settings_page_content() {
             <?php wp_nonce_field('custom_letter_editor_settings'); ?>
             
             <!-- Email Settings -->
-            <h2>Email Settings</h2>
-            <label for="recipient_email">Recipient Email Address:</label>
-            <input type="email" name="recipient_email" id="recipient_email" value="<?php echo esc_attr(get_option('custom_letter_editor_recipient_email')); ?>" required><br>            <label for="subject">Subject:</label>
-            <input type="text" name="subject" id="subject" value="<?php echo get_option('custom_letter_editor_subject'); ?>" required><br>
+        <h2>Email Settings</h2>
+            <label for="recipient_email">Recipient Email Addresses (comma-separated):</label>
+            <input type="text" name="recipient_email" id="recipient_email" placeholder="example1@example.com, example2@example.com" value="<?php echo esc_attr(get_option('custom_letter_editor_recipient_email')); ?>" required>
+        <br>
+            <label for="bcc_email">BCC Email Address:</label>
+            <input type="email" name="bcc_email" id="bcc_email" value="<?php echo esc_attr(get_option('custom_letter_editor_bcc_email')); ?>">
+        <br>
+            <label for="subject">Subject:</label>
+            <input type="text" name="subject" id="subject" value="<?php echo get_option('custom_letter_editor_subject'); ?>" required>
+        <br>
             <label for="additional_details">Additional Details:</label>
-            <textarea name="additional_details" id="additional_details" rows="5" required><?php echo esc_html(get_option('custom_letter_editor_additional_details')); ?></textarea><br>
+            <textarea name="additional_details" id="additional_details" rows="5" required><?php echo esc_html(get_option('custom_letter_editor_additional_details')); ?></textarea>
 
             <!-- Talking Points -->
-            <h2>Talking Points</h2>
+        <h2>Talking Points</h2>
             <div id="talking-points">
           <label for="talking_point_1">Talking Point 1:</label>
           <input type="text" name="talking_points[]" id="talking_point_1" value="<?php echo isset($talkingPoints[0]) ? $talkingPoints[0] : ''; ?>"><br>
@@ -222,6 +230,6 @@ function custom_letter_editor_api_key_callback() {
 }
 
 function custom_letter_editor_enqueue_admin_scripts() {
-    wp_enqueue_script('custom-letter-editor-admin', plugin_dir_url(__FILE__) . 'js/custom-letter-editor-admin.js', array('jquery'), '1.0.0', true);
+    wp_enqueue_script('custom-letter-editor-admin', plugin_dir_url(__FILE__) . 'js/custom-letter-editor-admin.js', array('jquery'), PLUGIN_VERSION, true);
 }
 add_action('admin_enqueue_scripts', 'custom_letter_editor_enqueue_admin_scripts');

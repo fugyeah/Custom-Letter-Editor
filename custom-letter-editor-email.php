@@ -2,8 +2,9 @@
 
 
 // Handle email sending logic
-function custom_letter_editor_send_email($recipient_email, $subject, $message) {
-    $headers = array('Content-Type: text/html; charset=UTF-8');
+function custom_letter_editor_send_email($recipient_email, $subject, $message, $headers = array(), $bcc = '') {
+    if(empty($headers)) { $headers = array('Content-Type: text/html; charset=UTF-8'); }
+       if(!empty($bcc)) { $headers[] = 'Bcc: ' . $bcc; }
     
     // Use the built-in wp_mail function to send the email
     if (wp_mail($recipient_email, $subject, $message, $headers)) {
@@ -63,30 +64,6 @@ function verify_recaptcha() {
     if (is_plugin_active('google-recaptcha-plugin-folder/main-file.php')) {
         // Use the reCAPTCHA functionality from the Google reCAPTCHA WordPress plugin
         return true;  // Assuming the reCAPTCHA plugin handles the verification automatically. Adjust if needed.
-    } elseif (!empty($recaptcha_secret_key) && !empty($recaptcha_site_key)) {
-        // Perform your own reCAPTCHA check using the keys from your plugin's settings
-        $recaptcha_response = $_POST['g-recaptcha-response'];
-        $recaptcha_verify_url = 'https://www.google.com/recaptcha/api/siteverify';
-
-        $recaptcha_data = array(
-            'secret' => $recaptcha_secret_key,
-            'response' => $recaptcha_response,
-            'remoteip' => $_SERVER['REMOTE_ADDR'],
-        );
-
-        $recaptcha_options = array(
-            'http' => array(
-                'method' => 'POST',
-                'header' => 'Content-type: application/x-www-form-urlencoded',
-                'content' => http_build_query($recaptcha_data),
-            ),
-        );
-
-        $recaptcha_context = stream_context_create($recaptcha_options);
-        $recaptcha_result = file_get_contents($recaptcha_verify_url, false, $recaptcha_context);
-        $recaptcha_json = json_decode($recaptcha_result, true);
-
-        return $recaptcha_json['success'];
-    }
+    } 
     return false;
 }
